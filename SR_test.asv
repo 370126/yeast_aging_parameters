@@ -1,0 +1,187 @@
+%% for MICE
+
+% parameters
+x_d=140;
+eta=9.8e-4;
+beta=0.38;
+kappa=1.42*beta;
+epsilon=11;
+
+T = 1500;        % 总时间
+N = 150000;      % 时间步数
+X0 = 0;        % 初始条件
+M = 2000;        % 模拟路径数
+
+dt=T/N;
+t = 0:dt:T;
+
+X_paths = zeros(M, N+1);
+
+rng('default')
+for m = 1:M
+    X_paths(m, 1) = X0;
+    for n = 1:N
+        mu = eta * t(n) - beta * (X_paths(m, n) / (X_paths(m, n) + kappa));
+        dW = sqrt(dt) * randn;
+
+        X_paths(m,n+1) = X_paths(m,n) + mu*dt+ sqrt(2*epsilon) * dW;
+        if X_paths(m,n+1)<0
+            X_paths(m,n+1)=0;
+        end
+    end
+end
+
+figure(1)
+plot(t,x_d*ones(length(t),1),'Color','r','LineWidth',1.25)
+hold on
+plot(t, X_paths,'LineWidth',0.1);
+xlabel('T/day')
+ylabel('X')
+title('Simulation of SR model: MICE')
+
+survive_rate=surv_rate(X_paths,x_d,t);
+figure(2)
+plot(t,survive_rate,'Color','black','LineWidth',1.5)
+title('Survival rate v.s. time: MICE')
+%%
+% hazard curve
+
+% analytical
+% h(tau)=((beta-eta*tau)^(kappa*beta/epsilon +1))*exp((kappa+x_d)*eta*tau/epsilon)
+t_narrow=t(1:35000);
+const1=kappa*beta/epsilon +1;
+const2=(kappa+x_d)*eta/epsilon;
+h_ta=((beta-eta.*t_narrow).^const1).*exp(const2.*t_narrow);
+figure(3)
+plot(t_narrow,h_ta)
+title('Harzard curve: MICE (analytical)')
+
+% numerical
+[h_tn,t_sparrow]=hazard(survive_rate,t_narrow,1000);
+figure(4)
+plot(t_sparrow,h_tn)
+title('Hazard curve: MICE (numerical)')
+%% for YEAST
+x_d=176;
+eta=12.5;
+beta=0.11;
+kappa=5.08*beta;
+epsilon=83;
+
+T = 8;
+N = 8000;
+X0 = 0;
+M = 2000;
+
+dt=T/N;
+t = 0:dt:T;
+
+X_paths = zeros(M, N+1);
+
+rng('default')
+for m = 1:M
+    X_paths(m, 1) = X0;
+    for n = 1:N
+        mu = eta * t(n) - beta * (X_paths(m, n) / (X_paths(m, n) + kappa));
+        dW = sqrt(dt) * randn;
+        X_paths(m,n+1) = X_paths(m,n) + mu*dt+ sqrt(2*epsilon) * dW;
+        if X_paths(m,n+1)<0
+            X_paths(m,n+1)=0;
+        end
+    end
+end
+
+figure(5)
+plot(t,x_d*ones(length(t),1),'Color','r','LineWidth',1.25)
+hold on
+plot(t, X_paths);
+xlabel('T/day')
+ylabel('X')
+title('Simulation of SR model: YEAST')
+
+[survive_rate,death_time]=surv_rate(X_paths,x_d,t);
+
+figure(6)
+plot(t,survive_rate,'Color','black','LineWidth',1.5)
+title('Survival rate v.s. time: YEAST')
+
+% figure(7)
+% histogram(death_time,15)
+% title('Death time distribution')
+
+%%
+% hazard curve
+
+% analytical
+% h(tau)=((beta-eta*tau)^(kappa*beta/epsilon +1))*exp((kappa+x_d)*eta*tau/epsilon)
+t_narrow=t;
+const1=kappa*beta/epsilon +1;
+const2=(kappa+x_d)*eta/epsilon;
+h_ta=((beta-eta.*t_narrow).^const1).*exp(const2.*t_narrow);
+figure(7)
+plot(t_narrow,h_ta)
+title('Harzard curve: YEAST (analytical)')
+%%
+% numerical
+[h_tn,t_sparrow]=hazard(survive_rate,t_narrow,500);
+figure(8)
+plot(t_sparrow,h_tn)
+title('Hazard curve: YEAST (numerical)')
+
+%%
+function [R,DT,t]=surv_rate(X,x_c,t)
+n_sample=length(X(:,1));
+n_step=length(X(1,:));
+R=zeros(n_step,1);
+DT=zeros(n_sample,1);
+X_temp=X;
+
+% for first-crossing
+for m = 1:n_sample
+    for n = 1:n_step
+        if X_temp(m,n)> x_c && X_temp(m,n)<x_c+100000
+            X_temp(m,n+1:end)=x_c+100000;
+            DT(m)=t(n);
+            break
+        end
+    end
+end
+
+for n=1:n_step
+    death=0;
+    for m=1:n_sample
+        k=0;%
+        if X_temp(m,n) >= x_c
+            death=death+1;
+        end
+    end
+    R(n)=1-death/n_sample;
+end
+t=t;
+end
+
+
+
+function [h,t_sparrow]=hazard(S,t,smoothby)
+% h(t)=-1/S*(dS/dt)=-1/S(t_i)*((S(t_i+1-S(t_i)/(t_i+1-t_i))
+% 计算时间步长
+dt = (max(t) - min(t)) / (length(t) - 1);
+step = smoothby * dt;
+max_steps = floor((length(t) - 1) / smoothby); % 最大可取步数
+t_sparrow = t(1:smoothby:smoothby*max_steps + 1); % 生成新的时间点
+
+% 计算 h
+h = zeros(length(t_sparrow), 1);
+for i = 1:length(t_sparrow) - 1
+    idx1 = smoothby * (i - 1) + 1;
+    idx2 = min(smoothby * i + 1, length(S)); % 防止越界
+    if idx2 <= length(S)
+        dSdt = (S(idx2) - S(idx1)) / (t(idx2) - t(idx1));
+        if S(idx1) == 0
+            h(i) = 0; % 避免除零
+        else
+            h(i) = -1 / S(idx1) * dSdt;
+        end
+    end
+end
+end

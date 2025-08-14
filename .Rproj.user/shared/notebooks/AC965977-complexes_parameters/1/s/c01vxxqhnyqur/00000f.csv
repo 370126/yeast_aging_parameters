@@ -1,0 +1,64 @@
+"0","# make new directory and set it as working directory"
+"0","if(!dir.exists(""./data/"")){"
+"0","  dir.create(""./data/"")"
+"0","}"
+"0","setwd(""./data/"")"
+"0","library(openxlsx)"
+"0","library(ggplot2)"
+"0","library(ggnewscale)"
+"0","library(ggforce)"
+"0","library(DT)"
+"0",""
+"0","# fetch files from GitHub"
+"0","url_1 <- ""https://raw.githubusercontent.com/370126/yeast_aging/main/data/complex_df_with_p_values.xlsx"""
+"0","url_2 <- ""https://raw.githubusercontent.com/370126/yeast_aging/main/data/lifes_set_alpha_complex.xlsx"""
+"0","url_3 <- ""https://raw.githubusercontent.com/370126/yeast_aging/main/data/simu_long.csv"""
+"0","download.file(url_1, destfile = ""complex_df_with_p_values.xlsx"", mode = ""wb"", method = ""libcurl"")"
+"2","试开URL’https://raw.githubusercontent.com/370126/yeast_aging/main/data/complex_df_with_p_values.xlsx'
+"
+"2","Content type 'application/octet-stream'"
+"2"," length 13546 bytes (13 KB)
+"
+"2","downloaded 13 KB
+
+"
+"0","download.file(url_2, destfile = ""lifes_set_alpha_complex.xlsx"", mode = ""wb"", method = ""libcurl"")"
+"2","试开URL’https://raw.githubusercontent.com/370126/yeast_aging/main/data/lifes_set_alpha_complex.xlsx'
+"
+"2","Content type 'application/octet-stream'"
+"2"," length 26742 bytes (26 KB)
+"
+"2","downloaded 26 KB
+
+"
+"0","download.file(url_3, destfile = ""simu_long.csv"", mode = ""wb"", method = ""libcurl"")"
+"2","试开URL’https://raw.githubusercontent.com/370126/yeast_aging/main/data/simu_long.csv'
+"
+"2","Content type 'text/plain; charset=utf-8'"
+"2"," length 12467 bytes (12 KB)
+"
+"2","downloaded 12 KB
+
+"
+"0","complex_df=read.xlsx(""complex_df_with_p_values.xlsx"")"
+"0","# round numeric columns to 4 decimal places"
+"0","complex_df[sapply(complex_df, is.numeric)] <- round(complex_df[sapply(complex_df, is.numeric)], 4)"
+"0","# get complex URL"
+"0","url_base=""https://www.ebi.ac.uk/complexportal/complex/"""
+"0","complex_df$Complex_URL=paste0(url_base,complex_df$Complex_ac)"
+"0","# reorder columns to have Complex_ac and Complex_URL at the front"
+"0","complex_df <- complex_df[, c(""Complex_ac"", ""Complex_URL"", setdiff(names(complex_df), c(""Complex_ac"", ""Complex_URL"")))]"
+"0",""
+"0","lifes_set_alpha_complex_df=read.xlsx(""lifes_set_alpha_complex.xlsx"")"
+"0","simu_long=read.csv(""simu_long.csv"")"
+"0","eta_x <- function(x){"
+"0","  (1183*exp(-(969*x)/400))/625 + (12287*exp(-(3899*x)/10000))/10000"
+"0","}"
+"0",""
+"0","epsilon_x <- function(x){"
+"0","  (1087*exp((14357*x)/10000))/5000 + (672625547621055*exp((3917540578361239*x)/281474976710656))/9444732965739290427392"
+"0","}"
+"0",""
+"0","xc_x <- function(x){"
+"0","  (3089*x^(131/80))/5000 + 247/625"
+"0","}"

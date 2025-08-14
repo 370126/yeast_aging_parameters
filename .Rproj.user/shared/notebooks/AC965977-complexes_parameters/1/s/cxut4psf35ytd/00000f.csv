@@ -1,0 +1,10 @@
+"0","download.file(url_3, destfile = ""simu_long.csv"", mode = ""wb"", method = ""libcurl"")
+"
+"2","试开URL’https://raw.githubusercontent.com/370126/yeast_aging/main/data/simu_long.csv'
+"
+"2","Content type 'text/plain; charset=utf-8'"
+"2"," length 12467 bytes (12 KB)
+"
+"2","downloaded 12 KB
+
+"
